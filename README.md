@@ -19,7 +19,7 @@ the law of total variance (strong triangle inequality / nested balls).
 | A1 Error Confinement Live Demo | [qnfo-demo-error-confinement](https://github.com/QNFO/qwav-demo-error-confinement) | ✅ LIVE |
 | A2 Q-PNA Classifier Playground | [qnfo-demo-qpna-classifier](https://github.com/QNFO/qwav-demo-qpna-classifier) | ✅ LIVE |
 | A3 Ultrametric Convergence Explorer | this repo | ✅ LIVE |
-| A4 Tree Distance Sandbox | — | 📋 planned |
-| A5 Hardware Pathway Visualizer | — | 📋 planned |
+| A4 Tree Distance Sandbox | [qnfo-demo-tree-distance](https://github.com/QNFO/qwav-demo-tree-distance) | ✅ LIVE |
+| A5 Hardware Pathway Visualizer | [qnfo-demo-hardware-visualizer](https://github.com/QNFO/qwav-demo-hardware-visualizer) | ✅ LIVE |
 
 *Generated with DeepChat | All page content is AI-generated and for reference only.*
