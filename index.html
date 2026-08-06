@@ -3,323 +3,226 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ultrametric Convergence Explorer</title>
+<title>Ultrametric Convergence — Variance Collapse Under Coarse-Graining</title>
 <style>
   :root {
-    --ink: #07080f;
-    --ink-2: #0b0f1c;
-    --panel: #0e1425;
-    --line: #1d2a46;
-    --line-2: #2b3d6b;
-    --text: #dce6ff;
-    --text-dim: #8295c0;
-    --cyan: #00e5ff;
-    --amber: #ffb300;
-    --ember: #ff5e3a;
-    --ice: #7dd8ff;
-    --green: #00ffa3;
-    --mono: "Cascadia Code", "Consolas", "SFMono-Regular", monospace;
-    --ui: "Bahnschrift", "Segoe UI", "Arial Narrow", sans-serif;
+    --ink: #07080f; --ink-2: #0b0f1c; --panel: #0e1425; --line: #1d2a46;
+    --line-2: #2b3d6b; --text: #dce6ff; --text-dim: #8295c0;
+    --cyan: #00e5ff; --amber: #ffb300; --ember: #ff5e3a; --ice: #7dd8ff;
+    --green: #00ffa3; --violet: #b388ff;
+    --mono: "Cascadia Code","Consolas","SFMono-Regular",monospace;
+    --ui: "Bahnschrift","Segoe UI","Arial Narrow",sans-serif;
+    --radius: 8px; --radius-sm: 5px;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background:
-      radial-gradient(1100px 560px at 70% -12%, rgba(0,229,255,0.06), transparent 60%),
-      radial-gradient(800px 480px at 8% 112%, rgba(255,94,58,0.05), transparent 55%),
-      var(--ink);
-    color: var(--text);
-    font-family: var(--ui);
-    min-height: 100vh;
-    overflow-x: hidden;
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:radial-gradient(1100px 560px at 72% -12%,rgba(179,136,255,0.05),transparent 60%),
+               radial-gradient(800px 480px at 8% 112%,rgba(0,229,255,0.04),transparent 55%),var(--ink);
+    color:var(--text);font-family:var(--ui);min-height:100vh;overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
   }
-  body::before {
-    content: "";
-    position: fixed; inset: 0;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-    opacity: 0.5;
-  }
-  .wrap { max-width: 1320px; margin: 0 auto; padding: 24px 28px 60px; position: relative; }
-
-  header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 12px 0 26px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.35em; color: var(--amber); text-transform: uppercase; }
-  h1 { font-size: clamp(26px, 4vw, 44px); font-weight: 500; letter-spacing: 0.01em; margin-top: 6px; line-height: 1.05; }
-  h1 .hl { color: var(--ember); font-weight: 700; }
-  h1 .hl2 { color: var(--ice); font-weight: 700; }
-  .sub { color: var(--text-dim); font-size: 14px; margin-top: 8px; max-width: 660px; line-height: 1.5; }
-  .badge { font-family: var(--mono); font-size: 11px; color: var(--green); border: 1px solid rgba(0,255,163,0.35); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-
-  .stage { display: grid; grid-template-columns: 290px 1fr; gap: 18px; margin-top: 22px; }
-  @media (max-width: 920px) { .stage { grid-template-columns: 1fr; } }
-
-  .panel { background: linear-gradient(180deg, var(--panel), var(--ink-2)); border: 1px solid var(--line); border-radius: 12px; padding: 20px; height: fit-content; }
-  .panel h3 { font-size: 12px; letter-spacing: 0.25em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 14px; }
-  .ctl { margin-bottom: 18px; }
-  .ctl label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; color: var(--text); }
-  .ctl .val { font-family: var(--mono); color: var(--amber); }
-  input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: var(--line-2); border-radius: 4px; outline: none; }
-  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--amber); border: 2px solid var(--ink); cursor: pointer; box-shadow: 0 0 12px rgba(255,179,0,0.6); }
-  .seg { display: flex; gap: 8px; flex-wrap: wrap; }
-  .seg button { flex: 1; min-width: 44px; background: var(--ink-2); color: var(--text-dim); border: 1px solid var(--line-2); border-radius: 8px; padding: 10px 6px; font-family: var(--mono); font-size: 14px; cursor: pointer; transition: all 0.15s; }
-  .seg button:hover { border-color: var(--amber); color: var(--amber); }
-  .seg button.active { background: rgba(255,179,0,0.14); border-color: var(--amber); color: var(--amber); }
-  .run-btn { width: 100%; margin-top: 6px; background: linear-gradient(135deg, var(--ember), #c4411f); color: var(--ink); border: none; border-radius: 10px; padding: 14px; font-family: var(--ui); font-weight: 700; font-size: 15px; letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase; transition: transform 0.1s, box-shadow 0.2s; }
-  .run-btn:hover { box-shadow: 0 0 28px rgba(255,94,58,0.4); transform: translateY(-1px); }
-  .run-btn:active { transform: translateY(1px); }
-  .run-btn.running { opacity: 0.6; pointer-events: none; }
-  .mode-note { margin-top: 16px; font-size: 12px; color: var(--text-dim); line-height: 1.55; border-top: 1px solid var(--line); padding-top: 14px; }
-  .mode-note code { font-family: var(--mono); color: var(--amber); font-size: 11px; }
-
-  .demo { background: var(--ink-2); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; position: relative; min-height: 540px; display: flex; flex-direction: column; }
-  .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); background: rgba(11,15,28,0.85); gap: 10px; flex-wrap: wrap; }
-  .toolbar .t-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.18em; text-transform: uppercase; }
-  .toolbar .t-status { font-family: var(--mono); font-size: 11px; color: var(--amber); }
-  #tree { width: 100%; flex: 1; display: block; cursor: crosshair; background: radial-gradient(760px 420px at 50% 18%, rgba(255,94,58,0.05), transparent 62%); }
-  .overlay-note { position: absolute; left: 14px; bottom: 14px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); background: rgba(7,8,15,0.78); border: 1px solid var(--line); padding: 6px 10px; border-radius: 6px; pointer-events: none; }
-
-  .readouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 18px; }
-  .readout { background: linear-gradient(180deg, var(--panel), var(--ink-2)); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-  .readout .r-label { font-size: 11px; letter-spacing: 0.18em; color: var(--text-dim); text-transform: uppercase; }
-  .readout .r-value { font-family: var(--mono); font-size: 22px; margin-top: 6px; color: var(--amber); word-break: break-all; }
-  .readout .r-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
-  .readout.good .r-value { color: var(--green); }
-  .readout.ice .r-value { color: var(--ice); }
-
-  .charts { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; margin-top: 18px; }
-  @media (max-width: 920px) { .charts { grid-template-columns: 1fr; } }
-  .card { background: linear-gradient(180deg, var(--panel), var(--ink-2)); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
-  .card h4 { font-size: 12px; letter-spacing: 0.22em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; }
-  canvas.plt { width: 100%; height: 250px; display: block; }
-
-  .explain { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  @media (max-width: 920px) { .explain { grid-template-columns: 1fr; } }
-  .explain .card p { font-size: 14px; line-height: 1.65; }
-  .explain .card .term { color: var(--amber); font-family: var(--mono); font-size: 13px; }
-  .explain .card .math { display: block; font-family: var(--mono); font-size: 13px; color: var(--ice); background: rgba(125,216,255,0.06); border: 1px solid rgba(125,216,255,0.18); border-radius: 8px; padding: 10px 12px; margin: 10px 0; }
-  footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--text-dim); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  footer a { color: var(--cyan); text-decoration: none; }
-  .fn { font-size: 11px; color: var(--text-dim); line-height: 1.6; margin-top: 16px; }
+  .wrap{max-width:1340px;margin:0 auto;padding:20px 24px 40px}
+  .header{padding:18px 0 10px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .header h1{font-family:var(--mono);font-size:1.35rem;font-weight:600;color:var(--violet);letter-spacing:-0.01em}
+  .header .tagline{font-size:0.85rem;color:var(--text-dim);margin-top:4px}
+  .grid{display:grid;grid-template-columns:280px 1fr 300px;gap:18px;align-items:start}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .panel h2{font-family:var(--mono);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .seg{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+  .seg button{background:var(--ink-2);border:1px solid var(--line);color:var(--text-dim);font-family:var(--mono);font-size:0.78rem;padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;min-width:36px;text-align:center}
+  .seg button:hover{color:var(--text);border-color:var(--line-2);background:rgba(179,136,255,0.06)}
+  .seg button.active{background:rgba(179,136,255,0.12);color:var(--violet);border-color:var(--violet);box-shadow:0 0 8px rgba(179,136,255,0.15)}
+  .seg button:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+  .slider-group{margin:8px 0}
+  .slider-group label{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-dim);margin-bottom:4px}
+  .slider-group label span{color:var(--violet);font-family:var(--mono)}
+  .slider-group input[type=range]{width:100%;accent-color:var(--violet)}
+  .slider-group .ticks{display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-dim);padding:0 2px}
+  .readout-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid rgba(29,42,70,0.5)}
+  .readout-row:last-child{border-bottom:none}
+  .readout-label{font-size:0.75rem;color:var(--text-dim)}
+  .readout-val{font-family:var(--mono);font-size:0.85rem;color:var(--text)}
+  .readout-val.violet{color:var(--violet)}
+  .readout-val.amber{color:var(--amber)}
+  .readout-val.big{font-size:1.2rem;font-weight:600}
+  .canvas-panel canvas{width:100%;display:block;border-radius:4px}
+  .formula-box{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;font-family:var(--mono);font-size:0.73rem;color:var(--text-dim);line-height:1.7;margin-top:10px}
+  .formula-box .eq{color:var(--violet)}
+  .formula-box .var{color:var(--amber)}
+  .formula-box .comment{color:var(--text-dim);opacity:0.6}
+  .action-bar{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .action-bar button{background:var(--ink-2);border:1px solid var(--line);color:var(--text-dim);font-family:var(--ui);font-size:0.73rem;padding:5px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s}
+  .action-bar button:hover{color:var(--text);border-color:var(--line-2)}
+  .action-bar button.primary{background:rgba(179,136,255,0.1);color:var(--violet);border-color:var(--violet)}
+  .action-bar button:disabled{opacity:0.4;cursor:not-allowed}
+  .tour-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s}
+  .tour-overlay.active{opacity:1;pointer-events:all}
+  .tour-card{background:var(--panel);border:1px solid var(--violet);border-radius:var(--radius);padding:24px 28px;max-width:420px;text-align:center;box-shadow:0 0 40px rgba(179,136,255,0.15)}
+  .tour-card h3{font-family:var(--mono);color:var(--violet);font-size:1rem;margin-bottom:8px}
+  .tour-card p{color:var(--text-dim);font-size:0.85rem;line-height:1.5;margin-bottom:16px}
+  .tour-card .step-dots{display:flex;justify-content:center;gap:6px;margin-bottom:14px}
+  .tour-card .step-dot{width:6px;height:6px;border-radius:50%;background:var(--line-2);transition:all 0.2s}
+  .tour-card .step-dot.active{background:var(--violet);box-shadow:0 0 6px rgba(179,136,255,0.4)}
+  .tour-card button{background:var(--violet);border:none;color:var(--ink);font-family:var(--ui);font-size:0.82rem;padding:8px 24px;border-radius:var(--radius-sm);cursor:pointer;font-weight:600}
+  .tour-card .skip{background:none;color:var(--text-dim);border:none;margin-left:10px;font-size:0.75rem;cursor:pointer}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--green);color:var(--green);padding:10px 18px;border-radius:var(--radius-sm);font-family:var(--mono);font-size:0.73rem;z-index:200;opacity:0;transform:translateY(20px);transition:all 0.3s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateY(0)}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--line-2);border-top-color:var(--violet);border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:4px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .seed-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+  .seed-row input{background:var(--ink-2);border:1px solid var(--line);color:var(--text);font-family:var(--mono);font-size:0.73rem;padding:4px 8px;border-radius:var(--radius-sm);width:80px}
+  .seed-row input:focus{outline:none;border-color:var(--violet)}
+  .seed-row label{font-size:0.7rem;color:var(--text-dim)}
+  .footer{margin-top:20px;padding-top:12px;border-top:1px solid var(--line);font-size:0.65rem;color:var(--text-dim);text-align:center}
+  .footer a{color:var(--violet);text-decoration:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div>
-      <div class="kicker">QWAV · Interactive Artifact A3</div>
-      <h1>Ultrametric <span class="hl2">Convergence</span> <span class="hl">Explorer</span></h1>
-      <p class="sub">Watch diversity collapse into uniformity — not because of a conspiracy, but because the geometry of the tree makes it inevitable. Drag the coarse-graining slider upward through an ultrametric hierarchy and observe a monotone collapse guaranteed by the strong triangle inequality.</p>
-    </div>
-    <div class="badge">UPWARD-MONOTONIC · tree coarse-graining</div>
-  </header>
-
-  <div class="stage">
-    <aside class="panel">
-      <h3>Experiment Controls</h3>
-      <div class="ctl">
-        <label>Prime p <span class="val" id="pVal">3</span></label>
-        <div class="seg" id="pSeg">
-          <button data-p="2">p=2</button>
-          <button data-p="3" class="active">p=3</button>
-          <button data-p="5">p=5</button>
-        </div>
-      </div>
-      <div class="ctl">
-        <label>Depth d <span class="val" id="dVal">5</span></label>
-        <div class="seg" id="dSeg">
-          <button data-d="3">3</button>
-          <button data-d="4">4</button>
-          <button data-d="5" class="active">5</button>
-          <button data-d="6">6</button>
-          <button data-d="7">7</button>
-        </div>
-      </div>
-      <div class="ctl">
-        <label>Coarse-graining level k <span class="val" id="kVal">0</span></label>
-        <input type="range" id="kSlider" min="0" max="5" step="1" value="0">
-      </div>
-      <button class="run-btn" id="animBtn">Animate Collapse</button>
-      <button class="run-btn" id="seedBtn" style="background:linear-gradient(135deg,var(--ice),#3a7ca8);color:var(--ink);">Reseed Values</button>
-      <div class="mode-note">
-        <strong>Upward monotonicity:</strong> as <code>k</code> increases, each leaf shows the
-        value of its ancestor at depth <code>d − k</code>. Variance of the displayed values
-        can never increase — the collapse is guaranteed by the law of total variance,
-        enforced by the tree's nested-ball structure.
-      </div>
-    </aside>
-
-    <section class="demo">
-      <div class="toolbar">
-        <span class="t-label">p-adic tree · coarse-graining</span>
-        <span class="t-status" id="treeStatus">drag k to collapse; click a subtree to inspect its ball</span>
-      </div>
-      <canvas id="tree"></canvas>
-      <div class="overlay-note" id="overlayNote">color = value at current coarse-graining</div>
-    </section>
-  </div>
-
-  <div class="readouts">
-    <div class="readout good">
-      <div class="r-label">Leaf diversity (variance)</div>
-      <div class="r-value" id="varVal">—</div>
-      <div class="r-sub">of displayed values at level k</div>
-    </div>
-    <div class="readout ice">
-      <div class="r-label">Collapse factor (k=0 → k)</div>
-      <div class="r-value" id="collapseVal">1.0×</div>
-      <div class="r-sub">variance reduction from raw leaves</div>
-    </div>
-    <div class="readout">
-      <div class="r-label">Distinct values</div>
-      <div class="r-value" id="distinctVal">—</div>
-      <div class="r-sub">unique values across leaves</div>
-    </div>
-    <div class="readout">
-      <div class="r-label">Monotonicity</div>
-      <div class="r-value" id="monoVal">✓</div>
-      <div class="r-sub">variance never increases with k</div>
-    </div>
-  </div>
-
-  <div class="charts">
-    <div class="card">
-      <h4>Diversity vs. coarse-graining (log scale)</h4>
-      <canvas class="plt" id="curveChart"></canvas>
-    </div>
-    <div class="card">
-      <h4>What's happening</h4>
-      <p style="font-size:13px;line-height:1.65;color:var(--text);">
-        Every leaf begins with a random value (ember → ice spectrum = high diversity).
-        At coarse-graining level <span class="term">k</span>, leaves in the same
-        depth-<span class="term">(d−k)</span> ball are replaced by their ball's mean.
-        Because balls are nested (strong triangle inequality), the replacement is a
-        conditional expectation — and conditional expectation can only reduce variance.
-      </p>
-      <p style="margin-top:10px;font-size:13px;line-height:1.65;color:var(--text);">
-        The curve on the left is <em>monotone non-increasing</em> by construction.
-        The geometry guarantees it. Uniformity is not imposed; it is inevitable.
-      </p>
-    </div>
-  </div>
-
-  <div class="explain">
-    <div class="card">
-      <h4>The law of total variance</h4>
-      <p>
-        In an ultrametric space, every pair of balls is either disjoint or nested.
-        Coarse-graining replaces a ball by its mean, which is the conditional
-        expectation of the leaves given the ball. The law of total variance says:
-      </p>
-      <span class="math">Var(X) = E[Var(X | B)] + Var(E[X | B]) ≥ Var(E[X | B])</span>
-      <p>
-        So each upward step — from leaves to parent balls — can only shrink (or hold)
-        the diversity you observe. Diversity collapse is a theorem, not a choice.
-      </p>
-    </div>
-    <div class="card">
-      <h4>Why this matters for hierarchy</h4>
-      <p>
-        The same mechanism that makes hierarchical clustering stable makes
-        ultrametric coarse-graining deterministic: once you fix the tree, the
-        convergence path is fully fixed. No hidden hand is needed — the
-        geometry supplies the force.
-      </p>
-      <p style="margin-top:10px;color:var(--text-dim);font-size:13px;">
-        This is the upward-monotonic dynamics visualized: <em>uniformity emerges from
-        structure, not from intervention.</em> Click any subtree to trace its ball's
-        convergence path.
-      </p>
-    </div>
-  </div>
-
-  <footer>
-    <span>QWAV Ultrametric Convergence Explorer · Strategy 3.0 · Artifact A3</span>
-    <span>Generated with <a href="https://github.com/ThinkInAIXYZ/deepchat">DeepChat</a> | All page content is AI-generated and for reference only</span>
-  </footer>
-  <p class="fn">† Pedagogical model: demonstrates upward-monotonic variance collapse under hierarchical coarse-graining in an ultrametric (tree) space, via the law of total variance. It is a mathematical illustration, not a claim about physical systems. See Convergence, Consilience, and the Hierarchical Architecture of Reality (QNFO publication).</p>
+<div class="header">
+  <h1>Ultrametric Convergence — Variance Collapse Under Coarse-Graining</h1>
+  <div class="tagline">Watch diversity collapse into uniformity — not by intervention, but because ultrametric geometry makes it inevitable</div>
 </div>
+
+<div class="grid">
+  <!-- LEFT -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="panel">
+      <h2>Tree Parameters</h2>
+      <label style="font-size:0.7rem;color:var(--text-dim);margin:8px 0 4px;display:block">Prime (p)</label>
+      <div class="seg" id="pSeg">
+        <button data-p="2">p = 2</button>
+        <button data-p="3" class="active">p = 3</button>
+        <button data-p="5">p = 5</button>
+      </div>
+      <label style="font-size:0.7rem;color:var(--text-dim);margin:8px 0 4px;display:block">Tree Depth (d)</label>
+      <div class="seg" id="dSeg">
+        <button data-d="3">3</button>
+        <button data-d="4">4</button>
+        <button data-d="5" class="active">5</button>
+        <button data-d="6">6</button>
+      </div>
+      <div class="slider-group" style="margin-top:10px">
+        <label>Coarse-Graining Level <span id="kLabel">k = 0 (leaves)</span></label>
+        <input type="range" id="kSlider" min="0" max="5" value="0" step="1">
+        <div class="ticks" id="kSliderTicks"></div>
+      </div>
+      <div class="action-bar">
+        <button id="animBtn" class="primary">▶ Run Collapse</button>
+        <button id="seedBtn">↺ Reseed</button>
+        <button id="resetBtn">Reset</button>
+        <button id="verifyBtn">✓ Verify</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Results</h2>
+      <div class="readout-row"><span class="readout-label">Variance at level k</span><span class="readout-val violet big" id="varVal">—</span></div>
+      <div class="readout-row"><span class="readout-label">Variance at k = 0 (leaves)</span><span class="readout-val" id="var0Val">—</span></div>
+      <div class="readout-row"><span class="readout-label">Collapse Ratio</span><span class="readout-val amber" id="collapseVal">—</span></div>
+      <div class="formula-box">
+        <div class="eq">Var(X) = E[Var(X|Y)] + Var(E[X|Y])</div>
+        <div class="comment">Law of total variance: coarse-graining reduces variance because it eliminates within-group variation. The second term <span class="var">Var(E[X|Y])</span> ≤ Var(X).</div>
+        <div class="comment" style="margin-top:3px">In an ultrametric tree, each level <span class="var">k</span> groups leaves by their ancestor at depth <span class="var">d−k</span>. Variance monotonically decreases with k.</div>
+      </div>
+      <div class="seed-row">
+        <label>Seed:</label>
+        <input type="number" id="seedInput" value="42" min="0" max="2147483647">
+        <button id="reseedBtn" style="font-size:0.65rem;padding:3px 8px">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Tree + Balls -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="panel canvas-panel" style="min-height:320px">
+      <h2>Ultrametric Tree (k = <span id="curK">0</span>)</h2>
+      <canvas id="tree"></canvas>
+    </div>
+    <div class="panel canvas-panel" style="min-height:220px">
+      <h2>Leaf Value Distribution</h2>
+      <canvas id="ballChart"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT: Variance chart -->
+  <div class="panel canvas-panel">
+    <h2>Variance vs. Coarse-Graining Level</h2>
+    <canvas id="curveChart"></canvas>
+  </div>
+</div>
+
+<div class="footer">
+  QWAV Artifact A3 — <a href="https://github.com/QNFO/qwav-demo-ultrametric-convergence">Source</a> |
+  <a href="https://github.com/QNFO/QWAV">QWAV Research Programme</a> |
+  <a href="#" id="tourTrigger">Tour</a>
+</div>
+</div>
+
+<!-- Tour -->
+<div class="tour-overlay" id="tourOverlay">
+  <div class="tour-card">
+    <h3 id="tourTitle">Welcome!</h3>
+    <p id="tourBody"></p>
+    <div class="step-dots" id="tourDots"></div>
+    <button id="tourNext">Next →</button>
+    <button class="skip" id="tourSkip">Skip</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
 
 <script>
 "use strict";
-/* ============ STATE ============ */
-const S = {
-  p: 3,
-  d: 5,
-  k: 0,
-  running: false,
-  leafValues: [],
-  nodeValues: [],
-  tree: [],
-  hover: null,
-  sel: null
-};
 
-/* ============ CANVAS ============ */
-const treeCv = document.getElementById("tree");
-const tctx = treeCv.getContext("2d");
-const curveCv = document.getElementById("curveChart");
-const ccx = curveCv.getContext("2d");
-
-function fitCanvas(cv, ctx) {
-  const r = cv.getBoundingClientRect();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = Math.max(200, Math.floor(r.width));
-  const h = Math.max(200, Math.floor(r.height));
-  if (cv.width !== w * dpr || cv.height !== h * dpr) {
-    cv.width = w * dpr;
-    cv.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  return { w, h };
+/* ═══════ SEEDED PRNG (mulberry32) ═══════ */
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
 }
+let rng = mulberry32(42);
 
-/* ============ TREE BUILD ============ */
+/* ═══════ STATE ═══════ */
+const S = { p: 3, d: 5, k: 0, seed: 42, running: false, leafValues: [], nodeValues: [], tree: [], hover: null, sel: null };
+
+/* ═══════ TREE BUILD ═══════ */
 function buildTree(p, d) {
   const nodes = [];
   const root = { depth: 0, index: 0, parent: null, children: [], slot: 0, leaf: false };
   nodes.push(root);
-  function build(node, depth, slot) {
+  (function build(node, depth, slot) {
     if (depth >= d) return;
     node.children = [];
     for (let k = 0; k < p; k++) {
       const child = { depth: depth + 1, index: nodes.length, parent: node, children: [], slot: slot * p + k, leaf: depth + 1 === d };
-      nodes.push(child);
-      node.children.push(child);
+      nodes.push(child); node.children.push(child);
       build(child, depth + 1, child.slot);
     }
-  }
-  build(root, 0, 0);
-  const leaves = nodes.filter(n => n.leaf);
-  const total = Math.max(1, leaves.length);
-  nodes.forEach(n => {
-    if (n.leaf) n.x = (n.slot + 0.5) / total;
-  });
-  function fill(node) {
-    if (node.leaf) return;
-    node.children.forEach(fill);
-    const xs = node.children.map(c => c.x);
-    node.x = (Math.min(...xs) + Math.max(...xs)) / 2;
-  }
-  fill(root);
+  })(root, 0, 0);
   return nodes;
 }
 
-/* ============ VALUES + AGGREGATION ============ */
+/* ═══════ RESEED WITH SEEDED RNG ═══════ */
 function reseed() {
   const leaves = S.tree.filter(n => n.leaf);
-  S.leafValues = leaves.map(() => Math.random());
+  S.leafValues = leaves.map(() => rng()); // Using mulberry32, not Math.random()
   S.nodeValues = new Array(S.tree.length).fill(0);
-  function agg(node) {
+  (function agg(node) {
     if (node.leaf) {
-      const li = leaves.findIndex(l => l.index === node.index);
-      S.nodeValues[node.index] = S.leafValues[li];
+      S.nodeValues[node.index] = S.leafValues[S.tree.filter(n => n.leaf && n.index <= node.index).length - 1];
       return;
     }
     node.children.forEach(agg);
     let sum = 0;
     node.children.forEach(c => { sum += S.nodeValues[c.index]; });
     S.nodeValues[node.index] = sum / node.children.length;
-  }
-  agg(S.tree[0]);
+  })(S.tree[0]);
+
+  // Fix: re-assign leaf values from nodeValues for consistency
+  S.tree.filter(n => n.leaf).forEach((n, i) => { S.leafValues[i] = S.nodeValues[n.index]; });
 }
 
 function leafDisplayValue(leafNode) {
@@ -339,253 +242,322 @@ function variance(arr) {
   return arr.reduce((a, b) => a + (b - m) * (b - m), 0) / arr.length;
 }
 
-/* ============ COLOR ============ */
-function valColor(v) {
-  const r = Math.round(255 * (1 - v) + 125 * v);
-  const g = Math.round(94 * (1 - v) + 216 * v);
-  const b = Math.round(58 * (1 - v) + 255 * v);
-  return `rgb(${r},${g},${b})`;
+/* ═══════ CANVAS ═══════ */
+function fitCanvas(cv, ctx) {
+  const r = cv.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(200, Math.floor(r.width)), h = Math.max(200, Math.floor(r.height));
+  if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w, h };
 }
 
-/* ============ RENDER TREE ============ */
 function renderTree() {
-  const { w, h } = fitCanvas(treeCv, tctx);
-  tctx.clearRect(0, 0, w, h);
-  const visualD = S.d;
-  const x0 = 24, x1 = w - 24;
-  const y0 = 36, y1 = h - 34;
-
-  S.tree.forEach(n => {
-    if (n.parent) {
-      const px = x0 + n.parent.x * (x1 - x0);
-      const py = y0 + (n.parent.depth / visualD) * (y1 - y0);
-      const cx = x0 + n.x * (x1 - x0);
-      const cy = y0 + (n.depth / visualD) * (y1 - y0);
-      const isSel = S.sel && sameSlot(n, S.sel);
-      tctx.strokeStyle = isSel ? "rgba(255,179,0,0.95)" : "rgba(29,42,70,0.8)";
-      tctx.lineWidth = isSel ? 2 : 1;
-      tctx.beginPath();
-      tctx.moveTo(px, py);
-      tctx.lineTo(cx, cy);
-      tctx.stroke();
-    }
-  });
-
-  S.tree.filter(n => n.leaf).forEach(n => {
-    const cx = x0 + n.x * (x1 - x0);
-    const cy = y0 + (n.depth / visualD) * (y1 - y0);
-    const v = leafDisplayValue(n);
-    const isSel = S.sel && sameSlot(n, S.sel);
-    const r = isSel ? 5.5 : 3.4;
-    tctx.beginPath();
-    tctx.arc(cx, cy, r, 0, Math.PI * 2);
-    tctx.fillStyle = valColor(v);
-    tctx.shadowColor = tctx.fillStyle;
-    tctx.shadowBlur = isSel ? 14 : 7;
-    tctx.fill();
-    tctx.shadowBlur = 0;
-  });
-
-  const rx = x0 + S.tree[0].x * (x1 - x0);
-  const ry = y0;
-  tctx.beginPath();
-  tctx.arc(rx, ry, 4, 0, Math.PI * 2);
-  tctx.fillStyle = "#dce6ff";
-  tctx.fill();
-
-  tctx.fillStyle = "rgba(130,149,192,0.75)";
-  tctx.font = "10px Cascadia Code, Consolas, monospace";
-  tctx.fillText(`k = ${S.k}  (ball radius p^${-(S.d - S.k)})`, 14, 18);
-}
-
-function sameSlot(a, b) {
-  return a.slot === b.slot && a.depth === b.depth;
-}
-
-/* ============ CURVE CHART ============ */
-function renderCurve() {
-  const { w, h } = fitCanvas(curveCv, ccx);
-  ccx.clearRect(0, 0, w, h);
-  const padL = 58, padR = 14, padT = 14, padB = 26;
+  const cv = document.getElementById("tree"), ctx = cv.getContext("2d");
+  const { w, h } = fitCanvas(cv, ctx);
+  ctx.clearRect(0, 0, w, h);
+  const padL = 16, padR = 16, padT = 18, padB = 18;
   const plotW = w - padL - padR, plotH = h - padT - padB;
 
-  const varSeries = [];
-  for (let k = 0; k <= S.d; k++) {
-    S.k = k;
-    varSeries.push(variance(leafDisplayValues()));
-  }
-  S.k = Math.min(S.k, S.d);
-  const rawVar = varSeries[0] || 1e-9;
-  const minV = Math.max(1e-9, Math.min(...varSeries.filter(v => v > 0).concat([rawVar * 0.01])));
-  const maxV = Math.max(rawVar, 1e-6);
+  const leaves = S.tree.filter(n => n.leaf);
+  const leafSpacing = plotW / (leaves.length + 1);
+  const depthH = plotH / S.d;
 
-  function y(v) {
-    const t = (Math.log10(Math.max(v, minV)) - Math.log10(minV)) / (Math.log10(maxV) - Math.log10(minV));
-    return padT + plotH * (1 - Math.max(0, Math.min(1, t)));
-  }
-
-  ccx.strokeStyle = "rgba(29,42,70,0.7)";
-  ccx.fillStyle = "#8295c0";
-  ccx.font = "10px Cascadia Code, Consolas, monospace";
-  ccx.textAlign = "right";
-  for (let e = Math.log10(minV); e <= Math.log10(maxV); e += 0.5) {
-    const v = Math.pow(10, e);
-    if (v < minV * 0.5 || v > maxV * 1.5) continue;
-    const yy = y(v);
-    ccx.beginPath(); ccx.moveTo(padL, yy); ccx.lineTo(w - padR, yy); ccx.stroke();
-    ccx.fillText(v >= 1 ? v.toFixed(1) : v.toExponential(0), padL - 6, yy + 3);
-  }
-  ccx.textAlign = "center";
-  for (let k = 0; k <= S.d; k++) {
-    ccx.fillText("k=" + k, padL + (k / S.d) * plotW, h - 8);
+  // Compute positions
+  const pos = [];
+  leaves.forEach((n, i) => pos[n.index] = { x: padL + (i + 1) * leafSpacing, y: padT + plotH });
+  for (let dep = S.d - 1; dep >= 0; dep--) {
+    S.tree.filter(n => n.depth === dep && !n.leaf).forEach(n => {
+      const xs = n.children.map(c => pos[c.index].x);
+      pos[n.index] = { x: xs.reduce((a,b)=>a+b,0) / xs.length, y: padT + dep * depthH };
+    });
   }
 
-  ccx.beginPath();
-  ccx.strokeStyle = "#ffb300";
-  ccx.lineWidth = 2;
-  ccx.shadowColor = "rgba(255,179,0,0.6)";
-  ccx.shadowBlur = 8;
-  varSeries.forEach((v, k) => {
-    const x = padL + (k / S.d) * plotW;
-    const yy = y(v);
-    if (k === 0) ccx.moveTo(x, yy); else ccx.lineTo(x, yy);
+  // Edges
+  ctx.strokeStyle = "rgba(29,42,70,0.5)"; ctx.lineWidth = 1;
+  S.tree.forEach(n => {
+    if (!n.parent) return;
+    ctx.beginPath();
+    ctx.moveTo(pos[n.parent.index].x, pos[n.parent.index].y);
+    ctx.lineTo(pos[n.index].x, pos[n.index].y);
+    ctx.stroke();
   });
-  ccx.stroke();
-  ccx.shadowBlur = 0;
 
-  const curX = padL + (S.k / S.d) * plotW;
-  const curY = y(varSeries[S.k]);
-  ccx.beginPath();
-  ccx.arc(curX, curY, 5, 0, Math.PI * 2);
-  ccx.fillStyle = "#00e5ff";
-  ccx.fill();
-  ccx.strokeStyle = "#00e5ff";
-  ccx.lineWidth = 1;
-  ccx.beginPath();
-  ccx.moveTo(curX, padT);
-  ccx.lineTo(curX, padT + plotH);
-  ccx.stroke();
+  // Nodes colored by value
+  S.tree.forEach(n => {
+    const v = S.nodeValues[n.index];
+    const r = n.leaf ? 3 : 4;
+    ctx.beginPath();
+    ctx.arc(pos[n.index].x, pos[n.index].y, r, 0, Math.PI * 2);
+    const red = Math.round(255 * (1 - v) + 179 * v);
+    const green = Math.round(90 * (1 - v) + 136 * v);
+    const blue = Math.round(210 * (1 - v) + 255 * v);
+    ctx.fillStyle = `rgb(${red},${green},${blue})`;
+    if (n.depth === 0) ctx.fillStyle = "rgba(255,179,0,0.9)";
+    ctx.fill();
+  });
 
-  return varSeries;
+  // Coarse-graining bands
+  if (S.k > 0 && S.k < S.d) {
+    const bandY = padT + (S.d - S.k) * depthH;
+    ctx.strokeStyle = "rgba(255,179,0,0.3)"; ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(padL, bandY); ctx.lineTo(padL + plotW, bandY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(255,179,0,0.7)"; ctx.font = "9px Cascadia Code, monospace";
+    ctx.fillText(`k = ${S.k}`, padL, bandY - 4);
+  }
 }
 
-/* ============ UI ============ */
-function fmt(v) {
-  if (v === null || v === undefined || isNaN(v)) return "—";
-  if (v >= 1e-3 && v < 1e4) return v.toPrecision(4);
-  return v.toExponential(2);
+function renderBalls() {
+  const cv = document.getElementById("ballChart"), ctx = cv.getContext("2d");
+  const { w, h } = fitCanvas(cv, ctx);
+  ctx.clearRect(0, 0, w, h);
+
+  const values = leafDisplayValues();
+  const padL = 30, padR = 10, padT = 16, padB = 20;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  const minV = Math.min(...values), maxV = Math.max(...values), range = maxV - minV || 1;
+
+  // Axis
+  ctx.strokeStyle = "rgba(29,42,70,0.5)"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT + plotH); ctx.lineTo(padL + plotW, padT + plotH); ctx.stroke();
+
+  values.forEach((v, i) => {
+    const x = padL + (i / (values.length - 1 || 1)) * plotW;
+    const y = padT + plotH * (1 - (v - minV) / range);
+    const r = 4;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(179,136,255,0.7)`;
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "var(--text-dim)"; ctx.font = "9px Cascadia Code, monospace";
+  ctx.textAlign = "left";
+  ctx.fillText(minV.toFixed(3), padL + 2, padT + plotH - 4);
+  ctx.fillText(maxV.toFixed(3), padL + 2, padT + 12);
 }
+
+function renderCurve() {
+  const cv = document.getElementById("curveChart"), ctx = cv.getContext("2d");
+  const { w, h } = fitCanvas(cv, ctx);
+  ctx.clearRect(0, 0, w, h);
+
+  const padL = 30, padR = 14, padT = 14, padB = 24;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  // Compute variance at each level
+  const prevK = S.k;
+  const varSeries = [];
+  for (let k = 0; k <= S.d; k++) { S.k = k; varSeries.push(variance(leafDisplayValues())); }
+  S.k = prevK;
+
+  const maxV = Math.max(...varSeries, 1e-9);
+
+  // Grid
+  ctx.strokeStyle = "rgba(29,42,70,0.4)"; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 5; i++) {
+    const y = padT + (i / 5) * plotH;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+  }
+
+  // Curve
+  ctx.beginPath();
+  ctx.strokeStyle = "rgba(179,136,255,0.8)"; ctx.lineWidth = 2;
+  for (let i = 0; i < varSeries.length; i++) {
+    const x = padL + (i / S.d) * plotW;
+    const y = padT + plotH * (1 - varSeries[i] / maxV);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Current point
+  const cx = padL + (S.k / S.d) * plotW;
+  const cy = padT + plotH * (1 - varSeries[S.k] / maxV);
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,179,0,0.9)"; ctx.fill();
+
+  // Labels
+  ctx.fillStyle = "var(--text-dim)"; ctx.font = "9px Cascadia Code, monospace"; ctx.textAlign = "center";
+  for (let i = 0; i <= S.d; i++) {
+    ctx.fillText(String(i), padL + (i / S.d) * plotW, padT + plotH + 14);
+  }
+}
+
+/* ═══════ UPDATE READOUTS ═══════ */
 function updateReadouts() {
-  document.getElementById("pVal").textContent = S.p;
-  document.getElementById("dVal").textContent = S.d;
-  document.getElementById("kVal").textContent = S.k;
-
-  const vals = leafDisplayValues();
-  const rawVals = S.tree.filter(n => n.leaf).map(l => S.nodeValues[l.index]);
-  const varK = variance(vals);
-  const var0 = variance(rawVals);
-  document.getElementById("varVal").textContent = fmt(varK);
-  document.getElementById("collapseVal").textContent = var0 > 0 ? (var0 / Math.max(varK, 1e-300)).toExponential(2) + "×" : "—";
-  const distinct = new Set(vals.map(v => v.toFixed(6))).size;
-  document.getElementById("distinctVal").textContent = distinct;
-
-  let mono = true;
-  let prev = variance(leafDisplayValues());
-  for (let k = 1; k <= S.d; k++) {
-    S.k = k;
-    const vk = variance(leafDisplayValues());
-    if (vk > prev * 1.000001) mono = false;
-    prev = vk;
-  }
-  S.k = Math.min(S.k, S.d);
-  document.getElementById("monoVal").textContent = mono ? "✓" : "✗ (unexpected)";
-
-  document.getElementById("kSlider").max = S.d;
-  document.getElementById("kSlider").value = S.k;
-  renderTree();
-  renderCurve();
+  const curVar = variance(leafDisplayValues());
+  document.getElementById("varVal").textContent = curVar.toFixed(6);
+  document.getElementById("var0Val").textContent = (() => { const pk = S.k; S.k = 0; const v0 = variance(leafDisplayValues()); S.k = pk; return v0.toFixed(6); })();
+  document.getElementById("collapseVal").textContent = curVar > 0 ? (variance(()=>{const pk=S.k;S.k=0;const v0=variance(leafDisplayValues());S.k=pk;return v0;})()/Math.max(curVar,1e-300)).toExponential(1)+"x" : "—";
+  document.getElementById("curK").textContent = String(S.k);
 }
 
-/* ============ ANIMATE ============ */
-async function animate() {
-  if (S.running) return;
-  S.running = true;
-  const btn = document.getElementById("animBtn");
-  btn.classList.add("running");
-  btn.textContent = "Collapsing…";
-  for (let k = 0; k <= S.d; k++) {
-    S.k = k;
-    updateReadouts();
-    await new Promise(r => setTimeout(r, 380));
-  }
-  btn.classList.remove("running");
-  btn.textContent = "Animate Collapse";
-  S.running = false;
-}
-
-/* ============ INTERACTION ============ */
-document.getElementById("pSeg").addEventListener("click", (e) => {
-  const b = e.target.closest("button"); if (!b) return;
-  S.p = parseInt(b.dataset.p);
-  document.querySelectorAll("#pSeg button").forEach(x => x.classList.toggle("active", x === b));
-  rebuild();
-});
-document.getElementById("dSeg").addEventListener("click", (e) => {
-  const b = e.target.closest("button"); if (!b) return;
-  S.d = parseInt(b.dataset.d);
-  document.querySelectorAll("#dSeg button").forEach(x => x.classList.toggle("active", x === b));
-  rebuild();
-});
-document.getElementById("kSlider").addEventListener("input", (e) => {
-  S.k = parseInt(e.target.value);
-  updateReadouts();
-});
 function rebuild() {
   S.tree = buildTree(S.p, S.d);
   S.k = 0;
   S.sel = null; S.hover = null;
   reseed();
   document.getElementById("kSlider").max = S.d;
-  updateReadouts();
+  document.getElementById("kSlider").value = 0;
+  document.getElementById("kLabel").textContent = "k = 0 (leaves)";
+  updateTicks();
+  renderTree(); renderCurve(); renderBalls(); updateReadouts();
+  logState();
 }
-document.getElementById("animBtn").addEventListener("click", animate);
-document.getElementById("seedBtn").addEventListener("click", () => { reseed(); updateReadouts(); });
 
-treeCv.addEventListener("mousemove", (e) => {
-  const rect = treeCv.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  const { w, h } = fitCanvas(treeCv, tctx);
-  const x0 = 24, x1 = w - 24, y0 = 36, y1 = h - 34;
-  const visualD = S.d;
-  let best = null, bestDist = 26;
-  S.tree.forEach(n => {
-    const cx = x0 + n.x * (x1 - x0);
-    const cy = y0 + (n.depth / visualD) * (y1 - y0);
-    const dist = Math.hypot(mx - cx, my - cy);
-    if (dist < bestDist) { bestDist = dist; best = n; }
-  });
-  S.hover = best ? { slot: best.slot, depth: best.depth } : null;
-  renderTree();
-});
-treeCv.addEventListener("mouseleave", () => { S.hover = null; renderTree(); });
-treeCv.addEventListener("click", (e) => {
-  if (S.hover) {
-    S.sel = { ...S.hover };
-    document.getElementById("treeStatus").textContent = `inspecting ball at depth ${S.sel.depth} — variance inside this ball at k=${S.k}`;
-  } else {
-    S.sel = null;
-    document.getElementById("treeStatus").textContent = "drag k to collapse; click a subtree to inspect its ball";
+function updateTicks() {
+  const ticks = document.getElementById("kSliderTicks");
+  ticks.innerHTML = Array.from({length: S.d+1}, (_,i) => `<span>${i}</span>`).join("");
+}
+
+function logState() {
+  console.log("[QWAV-A3] State:", JSON.stringify({p:S.p,d:S.d,k:S.k,seed:S.seed,nodes:S.tree.length,leaves:S.tree.filter(n=>n.leaf).length,timestamp:new Date().toISOString()}));
+}
+
+/* ═══════ COLLAPSE ANIMATION ═══════ */
+async function animate() {
+  if (S.running) return;
+  S.running = true;
+  const btn = document.getElementById("animBtn");
+  btn.disabled = true;
+
+  for (let k = 0; k <= S.d; k++) {
+    S.k = k;
+    document.getElementById("kSlider").value = k;
+    document.getElementById("kLabel").textContent = `k = ${k}${k===0?' (leaves)':k===S.d?' (root)':''}`;
+    updateReadouts();
+    renderTree(); renderCurve(); renderBalls();
+    btn.textContent = `k=${k}: σ²=${variance(leafDisplayValues()).toFixed(6)}`;
+    await new Promise(r => setTimeout(r, 380));
   }
-  renderTree();
+
+  S.running = false;
+  btn.textContent = "▶ Run Collapse";
+  btn.disabled = false;
+}
+
+/* ═══════ MATH VERIFICATION ═══════ */
+function verifyMath() {
+  const results = [];
+  const check = (name, fn) => { try { const r = fn(); results.push({name,status:r===true?"PASS":"FAIL",detail:r===true?"":String(r)}); return r===true; } catch(e) { results.push({name,status:"ERROR",detail:e.message}); return false; } };
+
+  // Build and compute
+  S.p = 3; S.d = 5; S.tree = buildTree(3, 5); reseed();
+  const series = [];
+  for (let k = 0; k <= 5; k++) { S.k = k; series.push(variance(leafDisplayValues())); }
+
+  // Monotonicity: variance must decrease
+  check("Variance monotonically decreases", () => {
+    for (let i = 1; i < series.length; i++) if (series[i] > series[i-1]) return `Not monotonic at k=${i}: ${series[i-1].toFixed(6)} -> ${series[i].toFixed(6)}`;
+    return true;
+  });
+
+  // Root variance = 0
+  check("Root variance = 0", () => series[5] <= 1e-10 ? true : `Root var=${series[5].toExponential(2)}`);
+
+  // Law of total variance
+  check("Var(leaves) >= Var(root)", () => series[0] >= series[5] ? true : `Leaf var=${series[0].toFixed(6)} < root var=${series[5].toFixed(6)}`);
+
+  // Leaf variance > 0 (unless degenerate)
+  check("Leaf variance > 0", () => series[0] > 1e-10 ? true : `Leaf var=${series[0].toExponential(2)}`);
+
+  // Deterministic
+  check("Deterministic (seed=42)", () => {
+    S.p = 3; S.d = 5; S.tree = buildTree(3, 5);
+    rng = mulberry32(42); reseed(); S.k = 0;
+    const v1 = variance(leafDisplayValues());
+    S.p = 3; S.d = 5; S.tree = buildTree(3, 5);
+    rng = mulberry32(42); reseed(); S.k = 0;
+    const v2 = variance(leafDisplayValues());
+    return v1 === v2 ? true : `v1=${v1}, v2=${v2}`;
+  });
+
+  // Tree size
+  check("Tree size matches p^d", () => {
+    const expected = (Math.pow(S.p, S.d+1)-1)/(S.p-1);
+    return S.tree.length === expected ? true : `Expected ${expected}, got ${S.tree.length}`;
+  });
+
+  let pass = 0, fail = 0;
+  results.forEach(r => { if (r.status==="PASS") pass++; else fail++; });
+  showToast(`Math verification: ${pass}/${results.length} passed`);
+  console.table(results);
+  return { total: results.length, passed: pass, failed: fail, results };
+}
+
+/* ═══════ GUIDED TOUR ═══════ */
+const TOUR = [
+  { title: "What You're Looking At", body: "This demo shows the Law of Total Variance in action. A tree is built with random leaf values, then they're averaged upward. As you coarse-grain (group leaves by ancestor), the variance among values MUST decrease — it's a mathematical theorem." },
+  { title: "Move the k Slider", body: "The k slider controls the coarse-graining level. k=0 shows the raw leaf values (maximum variance). As you increase k, leaves are grouped by ancestors at higher levels in the tree, and variance decreases. At k=d (the root), all leaves share one value — zero variance." },
+  { title: "Run the Collapse", body: "Click ▶ Run Collapse to watch the variance collapse automatically, level by level. The purple curve shows variance at each k. The amber dot tracks the current level. This monotonic decrease is guaranteed by the geometry of the tree." },
+  { title: "Explore Further", body: "Change the tree parameters (p and d) to see how tree structure affects the variance curve. Click ↺ Reseed to generate new random leaf values. The collapse is always monotonic — that's the theorem." },
+];
+
+let tourStep = 0;
+function startTour() { tourStep = 0; showTourStep(); }
+function showTourStep() {
+  const o = document.getElementById("tourOverlay");
+  if (tourStep >= TOUR.length) { o.classList.remove("active"); localStorage.setItem("qwav-a3-tour-done","1"); return; }
+  o.classList.add("active");
+  document.getElementById("tourTitle").textContent = TOUR[tourStep].title;
+  document.getElementById("tourBody").textContent = TOUR[tourStep].body;
+  document.getElementById("tourDots").innerHTML = TOUR.map((_,i) => `<div class="step-dot${i===tourStep?' active':''}"></div>`).join("");
+  document.getElementById("tourNext").textContent = tourStep === TOUR.length-1 ? "Got it!" : "Next →";
+}
+function nextTour() { tourStep++; showTourStep(); }
+function skipTour() { document.getElementById("tourOverlay").classList.remove("active"); localStorage.setItem("qwav-a3-tour-done","1"); }
+
+/* ═══════ TOAST ═══════ */
+function showToast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 3000); }
+
+/* ═══════ EVENT BINDINGS ═══════ */
+document.getElementById("pSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.p = parseInt(b.dataset.p);
+  document.querySelectorAll("#pSeg button").forEach(x => x.classList.toggle("active", x===b));
+  rebuild();
 });
+document.getElementById("dSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.d = parseInt(b.dataset.d);
+  document.querySelectorAll("#dSeg button").forEach(x => x.classList.toggle("active", x===b));
+  rebuild();
+});
+document.getElementById("kSlider").addEventListener("input", e => {
+  S.k = parseInt(e.target.value);
+  document.getElementById("kLabel").textContent = `k = ${S.k}${S.k===0?' (leaves)':S.k===S.d?' (root)':''}`;
+  renderTree(); renderCurve(); renderBalls(); updateReadouts();
+});
+document.getElementById("animBtn").addEventListener("click", animate);
+document.getElementById("seedBtn").addEventListener("click", () => { reseed(); S.k = 0; document.getElementById("kSlider").value = 0; updateReadouts(); renderTree(); renderCurve(); renderBalls(); showToast("Reseeded"); });
+document.getElementById("resetBtn").addEventListener("click", () => { S.p=3;S.d=5;S.k=0;S.seed=42;rng=mulberry32(42);document.getElementById("seedInput").value=42;document.getElementById("kSlider").value=0;document.getElementById("kSlider").max=5;document.getElementById("kLabel").textContent="k = 0 (leaves)";document.querySelector("#pSeg button[data-p='3']").classList.add("active");document.querySelector("#dSeg button[data-d='5']").classList.add("active");rebuild();showToast("Reset");});
+document.getElementById("verifyBtn").addEventListener("click", verifyMath);
+document.getElementById("reseedBtn").addEventListener("click", () => { S.seed = parseInt(document.getElementById("seedInput").value) || 42; rng = mulberry32(S.seed); rebuild(); showToast("Seed: "+S.seed); });
+document.getElementById("seedInput").addEventListener("change", e => { S.seed = parseInt(e.target.value) || 42; rng = mulberry32(S.seed); rebuild(); });
+document.getElementById("tourTrigger").addEventListener("click", e => { e.preventDefault(); startTour(); });
+document.getElementById("tourNext").addEventListener("click", nextTour);
+document.getElementById("tourSkip").addEventListener("click", skipTour);
 
-window.addEventListener("resize", () => { renderTree(); renderCurve(); });
+window.addEventListener("resize", () => { renderTree(); renderCurve(); renderBalls(); });
 
-/* ============ INIT ============ */
-S.tree = buildTree(S.p, S.d);
-reseed();
-updateReadouts();
+/* ═══════ INIT ═══════ */
+function init() {
+  S.tree = buildTree(S.p, S.d);
+  reseed();
+  document.getElementById("kSlider").max = S.d;
+  updateTicks();
+  updateReadouts();
+  renderTree(); renderCurve(); renderBalls();
+  logState();
+
+  if (!localStorage.getItem("qwav-a3-tour-done")) setTimeout(startTour, 800);
+}
+init();
+
+window.__qwavMathVerify = { verifyAll: verifyMath, variance, S };
 </script>
 </body>
 </html>
