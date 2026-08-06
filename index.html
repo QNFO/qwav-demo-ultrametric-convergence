@@ -391,7 +391,7 @@ function updateReadouts() {
   const curVar = variance(leafDisplayValues());
   document.getElementById("varVal").textContent = curVar.toFixed(6);
   document.getElementById("var0Val").textContent = (() => { const pk = S.k; S.k = 0; const v0 = variance(leafDisplayValues()); S.k = pk; return v0.toFixed(6); })();
-  document.getElementById("collapseVal").textContent = curVar > 0 ? (variance(()=>{const pk=S.k;S.k=0;const v0=variance(leafDisplayValues());S.k=pk;return v0;})()/Math.max(curVar,1e-300)).toExponential(1)+"x" : "—";
+  document.getElementById("collapseVal").textContent = curVar > 0 ? ((()=>{const pk=S.k;S.k=0;const v0=variance(leafDisplayValues());S.k=pk;return v0;})()/Math.max(curVar,1e-300)).toExponential(1)+"x" : "—";
   document.getElementById("curK").textContent = String(S.k);
 }
 
